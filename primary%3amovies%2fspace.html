@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Pixel Flapper</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #050505;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            touch-action: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        canvas {
+            border: 2px solid #333;
+            background-color: #000;
+            max-width: 100%;
+            max-height: 100%;
+        }
+        #ui {
+            position: absolute;
+            text-align: center;
+            pointer-events: none;
+            width: 100%;
+        }
+        .btn {
+            pointer-events: auto;
+            background: #ff00ff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 20px;
+            box-shadow: 0 0 15px #ff00ff;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui">
+        <div id="msg"></div>
+        <button id="restartBtn" class="btn" style="display:none;">RESTART MISSION</button>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+/** * SENIOR DEV NOTE: 
+ * Using RequestAnimationFrame for 60FPS smoothness. 
+ * Scaling logic ensures the game looks consistent across mobile aspect ratios.
+ */
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const msgEl = document.getElementById('msg');
+const restartBtn = document.getElementById('restartBtn');
+
+// Game Constants
+const GRAVITY = 0.25;
+const JUMP = -5;
+const PIPE_WIDTH = 60;
+const PIPE_GAP = 160;
+const BASE_SPEED = 3;
+
+// Game State
+let ship, pipes, score, highScore, gameOver, frameCount, currentSpeed;
+
+// Load high score
+highScore = localStorage.getItem('neonSpaceshipHighscore') || 0;
+
+// Arrow Key Control for PC
+document.addEventListener("keydown", function(event) {
+    if (event.key === "ArrowUp" || event.key === " ") {
+        if (!gameOver) {
+            ship.velocity = JUMP;   // Jump / Boost
+            document.getElementById("msg").innerHTML = "";
+        }
+    }
+});
+
+function init() {
+    canvas.width = 400;
+    canvas.height = 600;
+    
+    ship = {
+        x: 50,
+        y: 300,
+        w: 40,
+        h: 25,
+        velocity: 0
+    };
+    
+    pipes = [];
+    score = 0;
+    currentSpeed = BASE_SPEED;
+    gameOver = false;
+    frameCount = 0;
+    
+    msgEl.innerHTML = `<h1 style="color:#00ffff; text-shadow: 0 0 10px #00ffff;">NEON FLIGHT</h1><p>TAP TO BOOST</p>`;
+    restartBtn.style.display = 'none';
+    
+    loop();
+}
+
+function spawnPipe() {
+    const minHeight = 50;
+    const maxHeight = canvas.height - PIPE_GAP - minHeight;
+    const topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
+    
+    pipes.push({
+        x: canvas.width,
+        top: topHeight,
+        passed: false
+    });
+}
+
+function update() {
+    if (gameOver) return;
+
+    // Physics
+    ship.velocity += GRAVITY;
+    ship.y += ship.velocity;
+
+    // Boundary Check
+    if (ship.y + ship.h > canvas.height || ship.y < 0) {
+        endGame();
+    }
+
+    // Pipe Logic
+    if (frameCount % 90 === 0) spawnPipe();
+
+    pipes.forEach((pipe, index) => {
+        pipe.x -= currentSpeed;
+
+        // Collision Detection
+        if (
+            ship.x < pipe.x + PIPE_WIDTH &&
+            ship.x + ship.w > pipe.x &&
+            (ship.y < pipe.top || ship.y + ship.h > pipe.top + PIPE_GAP)
+        ) {
+            endGame();
+        }
+
+        // Scoring & Difficulty Scaling
+        if (!pipe.passed && pipe.x + PIPE_WIDTH < ship.x) {
+            score++;
+            pipe.passed = true;
+            
+            // Increase speed by 5% every 10 points
+            if (score % 10 === 0) {
+                currentSpeed *= 1.05;
+            }
+        }
+
+        // Cleanup
+        if (pipe.x + PIPE_WIDTH < 0) pipes.splice(index, 1);
+    });
+
+    frameCount++;
+}
+
+function draw() {
+    // Clear Canvas
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw Ship (Representing the neon ship with pixel-ish shapes)
+    ctx.fillStyle = '#00ffff';
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#00ffff';
+    ctx.fillRect(ship.x, ship.y, ship.w, ship.h); // Main Body
+    
+    // Engine Trail (Flicker effect)
+    ctx.fillStyle = frameCount % 2 === 0 ? '#ff00ff' : '#ff9900';
+    ctx.fillRect(ship.x - 15, ship.y + 5, 15, 15);
+    
+    // Draw Pipes
+    ctx.shadowBlur = 15;
+    pipes.forEach(pipe => {
+        ctx.fillStyle = '#33ff33';
+        ctx.shadowColor = '#33ff33';
+        // Top Pipe
+        ctx.fillRect(pipe.x, 0, PIPE_WIDTH, pipe.top);
+        // Bottom Pipe
+        ctx.fillRect(pipe.x, pipe.top + PIPE_GAP, PIPE_WIDTH, canvas.height);
+    });
+
+    // Draw UI
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#fff';
+    ctx.font = '20px Courier New';
+    ctx.fillText(`SCORE: ${score}`, 20, 40);
+    ctx.fillText(`BEST: ${highScore}`, 20, 70);
+}
+
+function endGame() {
+    gameOver = true;
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('neonSpaceshipHighscore', highScore);
+    }
+    msgEl.innerHTML = `<h1 style="color:#ff00ff; text-shadow: 0 0 10px #ff00ff;">MISSION FAILED</h1><p>SCORE: ${score}</p>`;
+    restartBtn.style.display = 'block';
+}
+
+function loop() {
+    update();
+    draw();
+    if (!gameOver) requestAnimationFrame(loop);
+}
+
+// Input Handling
+const handleInput = (e) => {
+    if (gameOver) return;
+    ship.velocity = JUMP;
+    msgEl.innerHTML = ""; // Clear start message
+};
+
+window.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    handleInput();
+}, {passive: false});
+
+window.addEventListener('mousedown', handleInput);
+
+restartBtn.addEventListener('click', () => {
+    init();
+});
+
+// Start Game
+init();
+
+</script>
+</body>
+</html>
