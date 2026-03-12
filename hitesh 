@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Motu Patlu - Fast & Furious</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            position: fixed;
+            background: #000;
+        }
+        
+        body { 
+            font-family: 'Arial', sans-serif;
+            touch-action: none;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #1a1a2e;
+        }
+        
+        /* Score Display */
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+            padding: 10px 20px;
+            border-radius: 30px;
+            z-index: 100;
+            border: 2px solid gold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        
+        #coin-counter {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-size: 24px;
+            background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);
+            padding: 10px 20px;
+            border-radius: 30px;
+            z-index: 100;
+            border: 2px solid gold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        #powerup-timer {
+            position: absolute;
+            top: 80px;
+            left: 10px;
+            color: white;
+            font-size: 20px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            padding: 8px 15px;
+            border-radius: 30px;
+            z-index: 100;
+            border: 2px solid #44ff88;
+            display: none;
+        }
+        
+        #weather-indicator {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 20px;
+            background: rgba(0,0,0,0.6);
+            padding: 8px 15px;
+            border-radius: 30px;
+            z-index: 100;
+            border: 2px solid #88ccff;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        #instructions {
+            position: absolute;
+            bottom: 100px;
+            left: 10px;
+            right: 10px;
+            color: white;
+            background: rgba(0,0,0,0.6);
+            padding: 8px;
+            border-radius: 15px;
+            font-size: 14px;
+            text-align: center;
+            border: 1px solid gold;
+            z-index: 90;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        /* Touch Controls - Big and Accessible */
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 10px;
+            z-index: 100;
+            pointer-events: none;
+        }
+        
+        .control-panel, .action-panel {
+            display: flex;
+            gap: 15px;
+            pointer-events: auto;
+        }
+        
+        .control-btn, .action-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            backdrop-filter: blur(5px);
+            border: 3px solid rgba(255,255,255,0.6);
+            color: white;
+            font-size: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            touch-action: manipulation;
+            transition: all 0.1s;
+        }
+        
+        .control-btn:active, .action-btn:active {
+            transform: scale(0.9);
+            background: rgba(255,215,0,0.5);
+            border-color: gold;
+        }
+        
+        #sound-toggle {
+            position: absolute;
+            top: 10px;
+            right: 80px;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.5);
+            border: 2px solid white;
+            color: white;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            touch-action: manipulation;
+        }
+        
+        /* Game Over Screen */
+        #game-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .game-over-box {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+            padding: 30px;
+            border-radius: 30px;
+            text-align: center;
+            color: white;
+            border: 3px solid gold;
+            width: 90%;
+            max-width: 350px;
+        }
+        
+        .game-over-box h1 {
+            font-size: 36px;
+            margin-bottom: 15px;
+        }
+        
+        .game-over-box .score-display {
+            font-size: 30px;
+            margin: 10px 0;
+        }
+        
+        .game-over-box button {
+            background: gold;
+            border: none;
+            padding: 12px 30px;
+            font-size: 20px;
+            border-radius: 40px;
+            font-weight: bold;
+            margin-top: 15px;
+            width: 100%;
+            touch-action: manipulation;
+        }
+        
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 15px 30px;
+            border-radius: 20px;
+            z-index: 10000;
+        }
+        
+        /* Force Landscape */
+        @media (orientation: portrait) {
+            #orientation-warning {
+                display: flex;
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: #1a1a2e;
+                z-index: 10000;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 24px;
+                text-align: center;
+                flex-direction: column;
+                gap: 20px;
+            }
+        }
+        
+        #orientation-warning {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="orientation-warning">
+        <div style="font-size: 48px;">📱</div>
+        <div>Kripya phone ko landscape mode mein ghumaayein</div>
+        <div style="font-size: 48px; margin-top: 20px;">↻</div>
+    </div>
+
+    <div id="game-container">
+        <div id="score">Score: 0</div>
+        <div id="coin-counter">
+            <span>🥟</span> <span id="coin-count">0</span>
+        </div>
+        <div id="weather-indicator">
+            <span>🌧️</span> <span>Baarish + Baraf</span>
+        </div>
+        <div id="powerup-timer"></div>
+        <div id="sound-toggle" onclick="toggleSound()">🔊</div>
+        <div id="instructions">
+            ⬅️➡️ Lane | ⬆️ Jump | ⬇️ Roll | 🥟 Samosa | 🧊 Baraf se bacho
+        </div>
+        
+        <div id="controls">
+            <div class="control-panel">
+                <div class="control-btn" id="move-left">⬅️</div>
+                <div class="control-btn" id="move-right">➡️</div>
+            </div>
+            <div class="action-panel">
+                <div class="action-btn" id="jump-btn">⬆️</div>
+                <div class="action-btn" id="roll-btn">⬇️</div>
+            </div>
+        </div>
+
+        <div id="game-overlay" style="display: none;">
+            <div class="game-over-box">
+                <h1>GAME OVER</h1>
+                <div class="score-display">
+                    <span>🥟</span> <span id="final-score">0</span>
+                </div>
+                <div>Total Samosa: <span id="final-coins">0</span></div>
+                <button onclick="restartGame()">🔁 Dubara Khelo</button>
+            </div>
+        </div>
+
+        <div id="loading">Loading Game... ⏳</div>
+    </div>
+
+    <!-- Three.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // Hide loading when ready
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loading').style.display = 'none';
+            }, 500);
+        });
+
+        // --- Game Variables ---
+        let scene, camera, renderer;
+        let motu, patlu;
+        let obstacles = [], coins = [], powerups = [], hailStones = [];
+        let rain;
+        
+        // Player object
+        const player = {
+            mesh: null,
+            lane: 0,
+            y: 1,
+            jumping: false,
+            jumpVelocity: 0,
+            rolling: false,
+            rollTimer: 0,
+            score: 0,
+            coins: 0,
+            magnet: false,
+            magnetTimer: 0,
+            surfing: false,
+            surfingTimer: 0
+        };
+
+        // Game state
+        let gameActive = true;
+        let gameSpeed = 0.35; // Speed badha di (pahle 0.25 tha)
+        let lastObstacleZ = -15;
+        let lastCoinZ = -15;
+        let lastPowerupZ = -15;
+        
+        // Sound
+        let soundEnabled = true;
+        let audioContext = null;
+
+        // --- Initialize Game ---
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x2a2a3a);
+            scene.fog = new THREE.Fog(0x2a2a3a, 20, 70);
+
+            // Camera (landscape optimized)
+            camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 7, 18);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.shadowMap.mapSize.width = 512;
+            renderer.shadowMap.mapSize.height = 512;
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            document.getElementById('game-container').appendChild(renderer.domElement);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0x404060);
+            scene.add(ambientLight);
+
+            const sunLight = new THREE.DirectionalLight(0xaaaaff, 1);
+            sunLight.position.set(5, 15, 5);
+            sunLight.castShadow = true;
+            sunLight.receiveShadow = true;
+            sunLight.shadow.mapSize.width = 512;
+            sunLight.shadow.mapSize.height = 512;
+            const d = 25;
+            sunLight.shadow.camera.left = -d;
+            sunLight.shadow.camera.right = d;
+            sunLight.shadow.camera.top = d;
+            sunLight.shadow.camera.bottom = -d;
+            sunLight.shadow.camera.near = 1;
+            sunLight.shadow.camera.far = 50;
+            scene.add(sunLight);
+
+            // Ground
+            const groundGeo = new THREE.PlaneGeometry(20, 200);
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x3a3a4a });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.z = -50;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // Track lines
+            const lineMat = new THREE.MeshStandardMaterial({ color: 0xcccc00 });
+            for (let i = -50; i < 50; i += 6) {
+                const line = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 2), lineMat);
+                line.position.set(0, 0.1, i);
+                line.receiveShadow = true;
+                scene.add(line);
+            }
+
+            // Create Motu (Faster animations ke liye simple)
+            motu = new THREE.Group();
+            
+            // Body
+            const body = new THREE.Mesh(
+                new THREE.SphereGeometry(0.9, 8),
+                new THREE.MeshStandardMaterial({ color: 0xffaa00 })
+            );
+            body.position.y = 0.9;
+            body.castShadow = true;
+            body.receiveShadow = true;
+            motu.add(body);
+            
+            // Head
+            const head = new THREE.Mesh(
+                new THREE.SphereGeometry(0.6, 6),
+                new THREE.MeshStandardMaterial({ color: 0xffccaa })
+            );
+            head.position.y = 1.8;
+            head.castShadow = true;
+            motu.add(head);
+            
+            // Cap
+            const cap = new THREE.Mesh(
+                new THREE.ConeGeometry(0.7, 0.3, 6),
+                new THREE.MeshStandardMaterial({ color: 0xff4444 })
+            );
+            cap.position.y = 2.3;
+            cap.castShadow = true;
+            motu.add(cap);
+            
+            // Eyes
+            const eyeGeo = new THREE.SphereGeometry(0.1, 4);
+            const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            const pupilGeo = new THREE.SphereGeometry(0.05, 4);
+            const pupilMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            
+            const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+            eyeL.position.set(-0.2, 2.0, 0.5);
+            motu.add(eyeL);
+            const pupilL = new THREE.Mesh(pupilGeo, pupilMat);
+            pupilL.position.set(-0.2, 2.0, 0.6);
+            motu.add(pupilL);
+            
+            const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+            eyeR.position.set(0.2, 2.0, 0.5);
+            motu.add(eyeR);
+            const pupilR = new THREE.Mesh(pupilGeo, pupilMat);
+            pupilR.position.set(0.2, 2.0, 0.6);
+            motu.add(pupilR);
+            
+            motu.position.set(0, 1, 10);
+            scene.add(motu);
+            player.mesh = motu;
+
+            // Create Patlu
+            patlu = new THREE.Group();
+            
+            const pBody = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.5, 0.5, 1.5, 6),
+                new THREE.MeshStandardMaterial({ color: 0x44aa44 })
+            );
+            pBody.position.y = 0.75;
+            pBody.castShadow = true;
+            patlu.add(pBody);
+            
+            const pHead = new THREE.Mesh(
+                new THREE.SphereGeometry(0.45, 6),
+                new THREE.MeshStandardMaterial({ color: 0xffccaa })
+            );
+            pHead.position.y = 1.5 + 0.45;
+            pHead.castShadow = true;
+            patlu.add(pHead);
+            
+            const pCap = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.55, 0.65, 0.25, 6),
+                new THREE.MeshStandardMaterial({ color: 0x0000aa })
+            );
+            pCap.position.y = 2.1;
+            pCap.castShadow = true;
+            patlu.add(pCap);
+            
+            // Dog
+            const dog = new THREE.Mesh(
+                new THREE.BoxGeometry(0.4, 0.3, 0.6),
+                new THREE.MeshStandardMaterial({ color: 0x8B4513 })
+            );
+            dog.position.set(0.7, 0.15, -0.2);
+            dog.castShadow = true;
+            patlu.add(dog);
+            
+            patlu.position.set(0, 1, 0);
+            scene.add(patlu);
+
+            // Rain effect
+            const rainCount = 300;
+            const rainGeo = new THREE.BufferGeometry();
+            const rainPos = new Float32Array(rainCount * 3);
+            for (let i = 0; i < rainCount; i++) {
+                rainPos[i * 3] = (Math.random() - 0.5) * 40;
+                rainPos[i * 3 + 1] = Math.random() * 30;
+                rainPos[i * 3 + 2] = (Math.random() - 0.5) * 100;
+            }
+            rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+            const rainMat = new THREE.PointsMaterial({ color: 0x88aaff, size: 0.15, transparent: true, opacity: 0.5 });
+            rain = new THREE.Points(rainGeo, rainMat);
+            scene.add(rain);
+
+            // Hail stones
+            for (let i = 0; i < 12; i++) {
+                const hail = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.2, 4),
+                    new THREE.MeshStandardMaterial({ color: 0xaaddff })
+                );
+                hail.castShadow = true;
+                hail.receiveShadow = true;
+                hail.position.set(
+                    (Math.random() - 0.5) * 20,
+                    Math.random() * 15 + 5,
+                    (Math.random() - 0.5) * 80
+                );
+                scene.add(hail);
+                hailStones.push(hail);
+            }
+
+            // Start game loop
+            animate();
+        }
+
+        // Helper function
+        function getLaneX(lane) {
+            return lane * 3;
+        }
+
+        // Create objects
+        function createTrain(z) {
+            const group = new THREE.Group();
+            const body = new THREE.Mesh(
+                new THREE.BoxGeometry(2.5, 1.5, 3),
+                new THREE.MeshStandardMaterial({ color: 0x884422 })
+            );
+            body.position.y = 0.75;
+            body.castShadow = true;
+            body.receiveShadow = true;
+            group.add(body);
+            
+            const wheelGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 6);
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+            
+            for (let i = -0.8; i <= 0.8; i += 1.6) {
+                const w1 = new THREE.Mesh(wheelGeo, wheelMat);
+                w1.rotation.z = Math.PI / 2;
+                w1.position.set(i, 0.4, -1.2);
+                w1.castShadow = true;
+                group.add(w1);
+                
+                const w2 = new THREE.Mesh(wheelGeo, wheelMat);
+                w2.rotation.z = Math.PI / 2;
+                w2.position.set(i, 0.4, 1.2);
+                w2.castShadow = true;
+                group.add(w2);
+            }
+            
+            group.position.set(0, 0, z);
+            return group;
+        }
+
+        function createSamosa(x, z) {
+            const group = new THREE.Group();
+            const s = new THREE.Mesh(
+                new THREE.ConeGeometry(0.4, 0.8, 4),
+                new THREE.MeshStandardMaterial({ color: 0xffaa00 })
+            );
+            s.rotation.y = Math.PI / 4;
+            s.castShadow = true;
+            group.add(s);
+            group.position.set(x, 0.5, z);
+            return group;
+        }
+
+        function createMagnet(x, z) {
+            const group = new THREE.Group();
+            const ring = new THREE.Mesh(
+                new THREE.TorusGeometry(0.4, 0.08, 4, 8),
+                new THREE.MeshStandardMaterial({ color: 0xff44aa })
+            );
+            ring.rotation.x = Math.PI / 2;
+            group.add(ring);
+            group.position.set(x, 0.5, z);
+            return group;
+        }
+
+        function createBoard(x, z) {
+            const group = new THREE.Group();
+            const board = new THREE.Mesh(
+                new THREE.BoxGeometry(1.2, 0.1, 0.4),
+                new THREE.MeshStandardMaterial({ color: 0x44ff88 })
+            );
+            board.rotation.y = Math.PI / 2;
+            board.castShadow = true;
+            group.add(board);
+            group.position.set(x, 0.3, z);
+            return group;
+        }
+
+        // Sound functions
+        window.toggleSound = () => {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-toggle').innerHTML = soundEnabled ? '🔊' : '🔇';
+        };
+
+        function initAudio() {
+            if (!audioContext && soundEnabled) {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {}
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled || !audioContext) return;
+            try {
+                if (audioContext.state === 'suspended') audioContext.resume();
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                
+                if (type === 'coin') {
+                    osc.frequency.setValueAtTime(800, audioContext.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                } else if (type === 'powerup') {
+                    osc.frequency.setValueAtTime(400, audioContext.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                } else if (type === 'gameover') {
+                    osc.frequency.setValueAtTime(200, audioContext.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.5);
+                    gain.gain.setValueAtTime(0.2, audioContext.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                }
+                
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+                osc.start();
+                osc.stop(audioContext.currentTime + 0.5);
+            } catch (e) {}
+        }
+
+        function vibrate(t) {
+            if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(t);
+        }
+
+        // Touch Controls
+        function setupControls() {
+            const left = document.getElementById('move-left');
+            const right = document.getElementById('move-right');
+            const jump = document.getElementById('jump-btn');
+            const roll = document.getElementById('roll-btn');
+            
+            left.addEventListener('touchstart', (e) => { e.preventDefault(); if (player.lane > -1) { player.lane--; player.mesh.position.x = getLaneX(player.lane); } });
+            right.addEventListener('touchstart', (e) => { e.preventDefault(); if (player.lane < 1) { player.lane++; player.mesh.position.x = getLaneX(player.lane); } });
+            jump.addEventListener('touchstart', (e) => { e.preventDefault(); if (!player.jumping && !player.rolling) { player.jumping = true; player.jumpVelocity = 0.3; } });
+            roll.addEventListener('touchstart', (e) => { e.preventDefault(); if (!player.rolling && !player.jumping) { player.rolling = true; player.rollTimer = 20; player.mesh.scale.y = 0.5; } });
+            
+            // Mouse events for testing
+            left.addEventListener('mousedown', (e) => { e.preventDefault(); if (player.lane > -1) { player.lane--; player.mesh.position.x = getLaneX(player.lane); } });
+            right.addEventListener('mousedown', (e) => { e.preventDefault(); if (player.lane < 1) { player.lane++; player.mesh.position.x = getLaneX(player.lane); } });
+            jump.addEventListener('mousedown', (e) => { e.preventDefault(); if (!player.jumping && !player.rolling) { player.jumping = true; player.jumpVelocity = 0.3; } });
+            roll.addEventListener('mousedown', (e) => { e.preventDefault(); if (!player.rolling && !player.jumping) { player.rolling = true; player.rollTimer = 20; player.mesh.scale.y = 0.5; } });
+        }
+
+        // Collision detection
+        function checkCollisions() {
+            if (!gameActive) return;
+            
+            const p = player.mesh.position;
+            
+            // Coins
+            coins = coins.filter(c => {
+                const dist = p.distanceTo(c.mesh.position);
+                if (dist < 1.5) {
+                    scene.remove(c.mesh);
+                    player.score += 10;
+                    player.coins++;
+                    document.getElementById('score').innerHTML = `Score: ${player.score}`;
+                    document.getElementById('coin-count').innerHTML = player.coins;
+                    playSound('coin');
+                    vibrate(30);
+                    return false;
+                }
+                if (player.magnet && dist < 5) {
+                    const dir = p.clone().sub(c.mesh.position).normalize();
+                    c.mesh.position.add(dir.multiplyScalar(0.2));
+                }
+                return true;
+            });
+            
+            // Powerups
+            powerups = powerups.filter(pu => {
+                const dist = p.distanceTo(pu.mesh.position);
+                if (dist < 1.5) {
+                    scene.remove(pu.mesh);
+                    playSound('powerup');
+                    vibrate(50);
+                    
+                    if (pu.type === 'magnet') {
+                        player.magnet = true;
+                        player.magnetTimer = 300;
+                        document.getElementById('powerup-timer').style.display = 'block';
+                        document.getElementById('powerup-timer').innerHTML = '🧲 Magnet';
+                    } else {
+                        player.surfing = true;
+                        player.surfingTimer = 600;
+                        player.mesh.children[0].material.color.setHex(0x44ff88);
+                        document.getElementById('powerup-timer').style.display = 'block';
+                        document.getElementById('powerup-timer').innerHTML = '🏄 Surfing';
+                    }
+                    return false;
+                }
+                return true;
+            });
+            
+            // Obstacles
+            obstacles = obstacles.filter(obs => {
+                const dist = p.distanceTo(obs.mesh.position);
+                if (dist < 2) {
+                    if (player.surfing) {
+                        scene.remove(obs.mesh);
+                        return false;
+                    } else {
+                        gameOver();
+                    }
+                }
+                return true;
+            });
+            
+            // Hail
+            hailStones.forEach(hail => {
+                if (p.distanceTo(hail.position) < 1.2 && !player.surfing) gameOver();
+            });
+        }
+
+        function gameOver() {
+            gameActive = false;
+            document.getElementById('final-score').innerHTML = player.score;
+            document.getElementById('final-coins').innerHTML = player.coins;
+            document.getElementById('game-overlay').style.display = 'flex';
+            playSound('gameover');
+            vibrate([100, 50, 100]);
+        }
+
+        window.restartGame = function() {
+            gameActive = true;
+            player.score = 0;
+            player.coins = 0;
+            player.mesh.position.set(0, 1, 10);
+            player.lane = 0;
+            player.surfing = false;
+            player.surfingTimer = 0;
+            player.magnet = false;
+            player.magnetTimer = 0;
+            player.mesh.children[0].material.color.setHex(0xffaa00);
+            player.mesh.scale.y = 1;
+            
+            document.getElementById('score').innerHTML = 'Score: 0';
+            document.getElementById('coin-count').innerHTML = '0';
+            
+            obstacles.forEach(o => scene.remove(o.mesh));
+            coins.forEach(c => scene.remove(c.mesh));
+            powerups.forEach(p => scene.remove(p.mesh));
+            obstacles = [];
+            coins = [];
+            powerups = [];
+            
+            lastObstacleZ = -15;
+            lastCoinZ = -15;
+            lastPowerupZ = -15;
+            
+            document.getElementById('game-overlay').style.display = 'none';
+            document.getElementById('powerup-timer').style.display = 'none';
+        };
+
+        // Spawn objects
+        function spawnObjects() {
+            if (!gameActive) return;
+            
+            if (player.mesh.position.z - lastObstacleZ > 15) {
+                const lane = Math.floor(Math.random() * 3) - 1;
+                const train = createTrain(lastObstacleZ - 25);
+                train.position.x = getLaneX(lane);
+                scene.add(train);
+                obstacles.push({ mesh: train });
+                lastObstacleZ -= 25;
+            }
+            
+            if (player.mesh.position.z - lastCoinZ > 4) {
+                const lane = Math.floor(Math.random() * 3) - 1;
+                const s = createSamosa(getLaneX(lane), lastCoinZ - 8);
+                scene.add(s);
+                coins.push({ mesh: s });
+                lastCoinZ -= 10;
+            }
+            
+            if (player.mesh.position.z - lastPowerupZ > 20) {
+                const lane = Math.floor(Math.random() * 3) - 1;
+                if (Math.random() < 0.1) {
+                    const b = createBoard(getLaneX(lane), lastPowerupZ - 20);
+                    scene.add(b);
+                    powerups.push({ mesh: b, type: 'surfing' });
+                } else {
+                    const m = createMagnet(getLaneX(lane), lastPowerupZ - 20);
+                    scene.add(m);
+                    powerups.push({ mesh: m, type: 'magnet' });
+                }
+                lastPowerupZ -= 25;
+            }
+        }
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (gameActive) {
+                // Jump
+                if (player.jumping) {
+                    player.mesh.position.y += player.jumpVelocity;
+                    player.jumpVelocity -= 0.02;
+                    if (player.mesh.position.y <= 1) {
+                        player.mesh.position.y = 1;
+                        player.jumping = false;
+                    }
+                }
+                
+                // Roll
+                if (player.rolling) {
+                    player.rollTimer--;
+                    if (player.rollTimer <= 0) {
+                        player.rolling = false;
+                        player.mesh.scale.y = 1;
+                    }
+                }
+                
+                // Powerup timers
+                if (player.magnet) {
+                    player.magnetTimer--;
+                    if (player.magnetTimer <= 0) {
+                        player.magnet = false;
+                        document.getElementById('powerup-timer').style.display = 'none';
+                    }
+                }
+                
+                if (player.surfing) {
+                    player.surfingTimer--;
+                    if (player.surfingTimer <= 0) {
+                        player.surfing = false;
+                        player.mesh.children[0].material.color.setHex(0xffaa00);
+                        document.getElementById('powerup-timer').style.display = 'none';
+                    }
+                }
+                
+                // Move objects (speed badha di)
+                const speed = gameSpeed;
+                obstacles.forEach(o => o.mesh.position.z += speed);
+                coins.forEach(c => {
+                    c.mesh.position.z += speed;
+                    c.mesh.rotation.y += 0.1;
+                });
+                powerups.forEach(p => p.mesh.position.z += speed);
+                
+                // Rain
+                const pos = rain.geometry.attributes.position.array;
+                for (let i = 1; i < pos.length; i += 3) {
+                    pos[i] -= 0.2;
+                    if (pos[i] < -5) {
+                        pos[i] = 25;
+                        pos[i-1] = (Math.random() - 0.5) * 40;
+                        pos[i+1] = player.mesh.position.z + 40;
+                    }
+                }
+                rain.geometry.attributes.position.needsUpdate = true;
+                
+                // Hail
+                hailStones.forEach(h => {
+                    h.position.y -= 0.1;
+                    h.position.z += speed;
+                    h.rotation.x += 0.05;
+                    h.rotation.y += 0.05;
+                    if (h.position.y < 0) {
+                        h.position.set(
+                            (Math.random() - 0.5) * 20,
+                            Math.random() * 15 + 10,
+                            player.mesh.position.z + 50
+                        );
+                    }
+                });
+                
+                // Patlu
+                patlu.position.z += speed;
+                
+                // Remove off-screen
+                obstacles = obstacles.filter(o => {
+                    if (o.mesh.position.z > 15) { scene.remove(o.mesh); return false; }
+                    return true;
+                });
+                coins = coins.filter(c => {
+                    if (c.mesh.position.z > 15) { scene.remove(c.mesh); return false; }
+                    return true;
+                });
+                powerups = powerups.filter(p => {
+                    if (p.mesh.position.z > 15) { scene.remove(p.mesh); return false; }
+                    return true;
+                });
+                
+                spawnObjects();
+                checkCollisions();
+                
+                // Camera
+                camera.position.z = player.mesh.position.z + 15;
+                camera.position.y = 6;
+                camera.position.x = player.mesh.position.x * 0.3;
+                camera.lookAt(player.mesh.position.x, 2, player.mesh.position.z + 5);
+            }
+            
+            renderer.render(scene, camera);
+        }
+
+        // Initialize on load
+        window.onload = () => {
+            init();
+            setupControls();
+            document.addEventListener('touchstart', initAudio, { once: true });
+        };
+
+        // Handle resize
+        window.addEventListener('resize', () => {
+            if (camera) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
+    </script>
+</body>
+</html>
